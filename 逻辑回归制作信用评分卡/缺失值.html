@@ -1,0 +1,38 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>补漏</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h1><a id="_0"></a>缺失值处理-随机森林法</h1>
+<p>对于缺失比例较大的部分，我们使用随机森林法进行填补，简单来说，就是使用n-1个特征来预测1个缺失的特征，我们构建了新的特征矩阵如下：<br>
+【新特征矩阵图片】<br>
+【全黑条形图】</p>
+<h1><a id="_4"></a>异常值处理</h1>
+<p>在传统的数据分析中，一般要求需要处理的异常值包括极大极小值，离群值，不符合业务逻辑的值，而在银行数据中，我们希望排除的一些异常值并不是一些超高或者超低的值，而是一些不符合业务逻辑，甚至不符合常理的值，在这里我们使用每个特征的核密度估计图来尝试挑出这些异常值，从中可以看出数据的呈现长尾分布，具有高方差的特性，符合我们对银行数据模式的认知<br>
+<img src="https://img-blog.csdnimg.cn/20201025213636236.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80Mzk2NjkwMA==,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述"><br>
+此外，我们做出了数据的统计系描述表<br>
+<img src="https://img-blog.csdnimg.cn/20201025214013233.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80Mzk2NjkwMA==,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述"><br>
+其中，最小的年龄竟然有0岁，这不符合常理，银行借贷的最小年龄是8岁，经过检查，发现只有一例样本存在这种情况，基本可以确定是异常值，删除即可，另外，有三个指标看起来很奇怪：<br>
+“NumberOfTime30-59DaysPastDueNotWorse” 、<br>
+“NumberOfTime60-89DaysPastDueNotWorse”、 “NumberOfTimes90DaysLate”<br>
+这三个指标分别是<br>
+“过去两年内出现35-59天逾期但是没有发展的更坏的次数”，<br>
+“过去两年内出现60-89天逾期但是没 有发展的更坏的次数”，<br>
+“过去两年内出现90天逾期的次数”。<br>
+这三个指标，在99%的分布的时候依然是2，最大值却是 98，看起来非常奇怪。一个人在过去两年内逾期35~59天98次，一年6个60天，两年内逾期98次这是怎么算出来的？ 我们不知道这个指标是如何计算出来的。经过统计发现，在这三个特征中，大于90的值全部属于同一批样本，共225个，所以我们先假设上面三个指标中只要每一项均大于90就将样本认定为异常的，<br>
+<img src="https://img-blog.csdnimg.cn/20201025221928222.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80Mzk2NjkwMA==,size_16,color_FFFFFF,t_70#pic_center" alt="请添加图片描述"><img src="https://img-blog.csdnimg.cn/20201025221928305.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80Mzk2NjkwMA==,size_16,color_FFFFFF,t_70#pic_center" alt="请添加图片描述"><br>
+<img src="https://img-blog.csdnimg.cn/20201025221928522.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80Mzk2NjkwMA==,size_16,color_FFFFFF,t_70#pic_center" alt="请添加图片描述"><br>
+那这些两年内逾期了98次的客户，应该都是坏客户。那么通过小提琴图检查是否是这样：<br>
+<img src="https://img-blog.csdnimg.cn/20201025221051581.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80Mzk2NjkwMA==,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述"><br>
+可以发现，并不是所有人都违约，但是与正常的数据相比，违约的占多数。同时我们还发现一个很有趣的现象，那就是，这部分异常的数据普遍收入很低<img src="https://img-blog.csdnimg.cn/20201025221751916.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80Mzk2NjkwMA==,size_16,color_FFFFFF,t_70#pic_center" alt="在这里插入图片描述"><br>
+所以我们最后的结论就是，先去除掉这225个样本，之后若是模型的拟合度不好，再选择将其加入。</p>
+</div>
+</body>
+
+</html>
